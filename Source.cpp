@@ -35,7 +35,7 @@ int main() {
 	auto timer = Timer();
 	
 	try {
-		std::fstream input(R"(..\PredictionWithPartialMatching(PPM)\testFile.txt)", std::ios_base::in | std::ios_base::binary);
+		std::fstream input(R"(..\PredictionWithPartialMatching(PPM)\testFile1.txt)", std::ios_base::in | std::ios_base::binary);
 		if (!input.is_open())
 			exit(1);
 		auto output = stl::OpenOutputBitFile(R"(..\PredictionWithPartialMatching(PPM)\testFile2.txt)");
@@ -64,7 +64,7 @@ int main() {
 		output1.close();*/
 
 		//print file sizes
-		std::cout << std::format("Original file size = {}bytes\n", fileSize(fs::path(R"(..\PredictionWithPartialMatching(PPM)\testFile.txt)")));
+		std::cout << std::format("Original file size = {}bytes\n", fileSize(fs::path(R"(..\PredictionWithPartialMatching(PPM)\testFile1.txt)")));
 		std::cout << std::format("Compressed file size = {} bytes\n", fileSize(fs::path(R"(..\PredictionWithPartialMatching(PPM)\testFile2.txt)")));
 		std::cout << std::format("Expanded file size = {} bytes\n", fileSize(fs::path(R"(..\AdaptiveArithmeticCoding\testFile3.txt)")));
 	}

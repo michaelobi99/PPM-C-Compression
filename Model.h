@@ -15,10 +15,12 @@ struct Symbol {
 #define ESCAPE 257
 #define END_OF_STREAM 256
 #define SYMBOL_COUNT 257
+#define MAX_SIZE  ((1 << 14) - (1))
+
 uint16_t totals[SYMBOL_COUNT + 2]; //used to ge the cumulative totals of any context
 uint16_t negativeOneContextTable[SYMBOL_COUNT + 1]; //normal symbols + END_OF_STREAM symbol
 char excludedCharacters[256];
-const int MAX_SIZE = (1 << 14) - 1;
+
 
 struct Trie {
 	struct Node {
