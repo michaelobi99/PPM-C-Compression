@@ -1,10 +1,6 @@
 #pragma once
-#include <memory>
-#include <vector>
-#include <ranges>
 #include <optional>
-
-using USHORT = uint16_t;
+#include "Trie.h"
 
 struct Symbol {
 	USHORT lowCount;
@@ -12,42 +8,17 @@ struct Symbol {
 	USHORT scale;
 };
 
-#define ESCAPE 257
-#define END_OF_STREAM 256
-#define SYMBOL_COUNT 257
-#define MAX_SIZE  ((1 << 14) - (1))
 
-uint16_t totals[SYMBOL_COUNT + 2]; //used to ge the cumulative totals of any context
-uint16_t negativeOneContextTable[SYMBOL_COUNT + 1]; //normal symbols + END_OF_STREAM symbol
+uint16_t totals[SYMBOL_COUNT + 2]; //used to get the cumulative totals of any context
+uint16_t negativeOneContextTable[SYMBOL_COUNT + 1];
 char excludedCharacters[256];
 
 
-struct Trie {
-	struct Node {
-		std::vector<std::shared_ptr<Node>> children;
-		std::shared_ptr<Node> vine;
-		USHORT depthInTrie;
-		USHORT contextCount; //keeps track of the frequency of this symbol in a particular context
-		USHORT activeChildren; //min 0 , max 256
-		char symbol;
-		Node() : vine{ nullptr }, depthInTrie{ 0 }, contextCount{ 0 }, activeChildren{ 0 }, symbol { char() }{
-			children.resize(SYMBOL_COUNT);
-			std::ranges::for_each(children, [](std::shared_ptr<Node>& elem) {elem = nullptr; });
-		}
-	};
-	Trie() : root{ std::make_shared<Node>() } {}
-	std::shared_ptr<Node> root = nullptr;
-	uint32_t maxDepth{ 0 };
-};
-
-Trie trie;
-std::shared_ptr<Trie::Node> basePtr = trie.root;//points to the most recent node of the Trie
-std::shared_ptr<Trie::Node> cursor{basePtr};
-
-
 void initializeModel(uint32_t order) {
+	trie.root = std::make_shared<Trie::Node>();
+	basePtr = trie.root;//points to the most recent node of the Trie
+	cursor = basePtr;
 	trie.maxDepth = order + 1;
-	//escapeContext = order;
 	negativeOneContextTable[0] = 0;
 	for (int i = 0; i < SYMBOL_COUNT; ++i) {
 		negativeOneContextTable[i + 1] = negativeOneContextTable[i] + 1;
@@ -101,7 +72,6 @@ bool convertIntToSymbol(int c, Symbol& s) {
 		s.scale = negativeOneContextTable[END_OF_STREAM + 1];
 		return false;
 	}
-	//std::cout << (char)c << "\n";
 	bool escaped{};
 	getProbability();
 	if (cursor->children[c] != nullptr) { //current symbol exists in context
@@ -119,8 +89,40 @@ bool convertIntToSymbol(int c, Symbol& s) {
 	return escaped;
 }
 
+void getSymbolScale(Symbol& s) {
+	while (cursor) {
+		if (cursor->activeChildren > 0) break;
+		cursor = cursor->vine;
+	}
+	if (!cursor) { 
+		s.scale = negativeOneContextTable[END_OF_STREAM + 1]; 
+	}
+	else {
+		getProbability();
+		s.scale = totals[ESCAPE + 1];
+	}
+}
+
+int convertSymbolToInt(long index, Symbol& s) {
+	int c;
+	if (cursor) {
+		for (c = SYMBOL_COUNT; index < totals[c]; --c) {}
+		s.highCount = totals[c + 1];
+		s.lowCount = totals[c];
+		return c;
+	}
+	else {
+		for (c = END_OF_STREAM; index < negativeOneContextTable[c]; --c) {}
+		s.highCount = negativeOneContextTable[c + 1];
+		s.lowCount = negativeOneContextTable[c];
+		return c;
+	}
+}
+
+
+
+
 void updateModel(int c) {
-	//code to update Trie
 	//search for parent (parent must be at a lower depth that maximum depth
 	std::shared_ptr<Trie::Node> recentlyUpdatedNodePtr{ basePtr }, vineUpdater{ nullptr };
 	if (recentlyUpdatedNodePtr->depthInTrie == trie.maxDepth) {
@@ -155,7 +157,7 @@ void updateModel(int c) {
 		vineUpdater->vine = recentlyUpdatedNodePtr->children[c];
 		vineUpdater = recentlyUpdatedNodePtr->children[c];
 	}
-	//at this point recentlyUpdatedNodePtr will be pointing to the root, all order 1 context symbols
+	//at this point recentlyUpdatedNodePtr will be pointing to the root. All order-1 context symbols
 	//have their vine pointig to the root
 	recentlyUpdatedNodePtr->children[c]->vine = recentlyUpdatedNodePtr; 
 	cursor = basePtr;
