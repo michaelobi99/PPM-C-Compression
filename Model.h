@@ -12,6 +12,7 @@ struct Symbol {
 uint16_t totals[SYMBOL_COUNT + 2]; //used to get the cumulative totals of any context
 uint16_t negativeOneContextTable[SYMBOL_COUNT + 1];
 char excludedCharacters[256];
+int escapeContext = 0;
 
 
 void initializeModel(uint32_t order) {
@@ -59,14 +60,12 @@ void getProbability() {
 }
 
 bool convertIntToSymbol(int c, Symbol& s) {
-	int escapeContext{0};
-	if (cursor)
-		escapeContext = cursor->depthInTrie;
-	if (escapeContext > 0)
-		for (; escapeContext > 0; --escapeContext, cursor = cursor->vine) {
+	if (escapeContext >= 0) {
+		for (; cursor; --escapeContext, cursor = cursor->vine) {
 			if (cursor->activeChildren > 0) break;
 		}
-	else{
+	}
+	if (!cursor) {
 		s.highCount = negativeOneContextTable[c + 1];
 		s.lowCount = negativeOneContextTable[c];
 		s.scale = negativeOneContextTable[END_OF_STREAM + 1];
@@ -74,7 +73,7 @@ bool convertIntToSymbol(int c, Symbol& s) {
 	}
 	bool escaped{};
 	getProbability();
-	if (cursor->children[c] != nullptr) { //current symbol exists in context
+	if (cursor->children[c]) { //current symbol exists in context
 		s.highCount = totals[c + 1];
 		s.lowCount = totals[c];
 		escaped = false;
@@ -94,7 +93,7 @@ void getSymbolScale(Symbol& s) {
 		if (cursor->activeChildren > 0) break;
 		cursor = cursor->vine;
 	}
-	if (!cursor) { 
+	if (!cursor) {
 		s.scale = negativeOneContextTable[END_OF_STREAM + 1]; 
 	}
 	else {
@@ -105,21 +104,22 @@ void getSymbolScale(Symbol& s) {
 
 int convertSymbolToInt(long index, Symbol& s) {
 	int c;
-	if (cursor) {
-		for (c = SYMBOL_COUNT; index < totals[c]; --c) {}
-		s.highCount = totals[c + 1];
-		s.lowCount = totals[c];
-		return c;
-	}
-	else {
+	if (!cursor) {
 		for (c = END_OF_STREAM; index < negativeOneContextTable[c]; --c) {}
 		s.highCount = negativeOneContextTable[c + 1];
 		s.lowCount = negativeOneContextTable[c];
 		return c;
 	}
+	else {
+		for (c = ESCAPE; index < totals[c]; --c) {}
+		s.highCount = totals[c + 1];
+		s.lowCount = totals[c];
+		if (c == ESCAPE) {
+			cursor = cursor->vine;
+		}
+		return c;
+	}
 }
-
-
 
 
 void updateModel(int c) {
@@ -128,19 +128,21 @@ void updateModel(int c) {
 	if (recentlyUpdatedNodePtr->depthInTrie == trie.maxDepth) {
 		recentlyUpdatedNodePtr = recentlyUpdatedNodePtr->vine;
 	}
-	if (recentlyUpdatedNodePtr->children[c]) //if not nullptr...Hence, symbol is present
+	if (recentlyUpdatedNodePtr->children[c])//if not nullptr...Hence, symbol is present
 		recentlyUpdatedNodePtr->children[c]->contextCount++;
 	else {
 		recentlyUpdatedNodePtr->children[c] = std::make_shared<Trie::Node>();
 		recentlyUpdatedNodePtr->children[c]->symbol = c;
 		recentlyUpdatedNodePtr->children[c]->depthInTrie = recentlyUpdatedNodePtr->depthInTrie + 1;
 		recentlyUpdatedNodePtr->children[c]->contextCount++;
-		if (recentlyUpdatedNodePtr->children[c]->contextCount == 255)
-			rescaleContextCount(recentlyUpdatedNodePtr);
 		recentlyUpdatedNodePtr->activeChildren++;
 	}
+	if (recentlyUpdatedNodePtr->children[c]->contextCount == 255)
+		rescaleContextCount(recentlyUpdatedNodePtr);
+
 	basePtr = recentlyUpdatedNodePtr->children[c];
 	vineUpdater = basePtr;
+
 	while (recentlyUpdatedNodePtr->depthInTrie > 0) {
 		recentlyUpdatedNodePtr = recentlyUpdatedNodePtr->vine;
 		if (recentlyUpdatedNodePtr->children[c])
@@ -150,10 +152,11 @@ void updateModel(int c) {
 			recentlyUpdatedNodePtr->children[c]->symbol = c;
 			recentlyUpdatedNodePtr->children[c]->depthInTrie = recentlyUpdatedNodePtr->depthInTrie + 1;
 			recentlyUpdatedNodePtr->children[c]->contextCount++;
-			if (recentlyUpdatedNodePtr->children[c]->contextCount == 255)
-				rescaleContextCount(recentlyUpdatedNodePtr);
 			recentlyUpdatedNodePtr->activeChildren++;
 		}
+		if (recentlyUpdatedNodePtr->children[c]->contextCount == 255)
+			rescaleContextCount(recentlyUpdatedNodePtr);
+
 		vineUpdater->vine = recentlyUpdatedNodePtr->children[c];
 		vineUpdater = recentlyUpdatedNodePtr->children[c];
 	}
@@ -161,4 +164,5 @@ void updateModel(int c) {
 	//have their vine pointig to the root
 	recentlyUpdatedNodePtr->children[c]->vine = recentlyUpdatedNodePtr; 
 	cursor = basePtr;
+	escapeContext = basePtr->depthInTrie;
 }

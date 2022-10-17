@@ -51,7 +51,7 @@ int main() {
 		printf("PPMC coding compression time = %f seconds\n\n", timer.time());
 		stl::closeOutputBitFile(output);
 
-		auto input1 = stl::OpenInputBitFile(R"(..\PredictionWithPartialMatching(PPM)\testFile2.txt)");
+		/*auto input1 = stl::OpenInputBitFile(R"(..\PredictionWithPartialMatching(PPM)\testFile2.txt)");
 		std::fstream output1(R"(..\PredictionWithPartialMatching(PPM)\testFile3.txt)", std::ios_base::out | std::ios_base::binary);
 		printf("Expansion started....\n");
 		timer.Start();
@@ -60,12 +60,12 @@ int main() {
 		printf("\nFile expansion complete\n");
 		printf("PPMC coding expansion time = %f seconds\n\n", timer.time());
 		stl::closeInputBitFile(input1);
-		output1.close();
+		output1.close();*/
 
 		//print file sizes
 		std::cout << std::format("Original file size = {}bytes\n", fileSize(fs::path(R"(..\PredictionWithPartialMatching(PPM)\testFile.txt)")));
 		std::cout << std::format("Compressed file size = {} bytes\n", fileSize(fs::path(R"(..\PredictionWithPartialMatching(PPM)\testFile2.txt)")));
-		std::cout << std::format("Expanded file size = {} bytes\n", fileSize(fs::path(R"(..\PredictionWithPartialMatching(PPM)\testFile3.txt)")));
+		//std::cout << std::format("Expanded file size = {} bytes\n", fileSize(fs::path(R"(..\PredictionWithPartialMatching(PPM)\testFile3.txt)")));
 	}
 	catch (stl::FileError const& error) {
 		std::cout << error.what();

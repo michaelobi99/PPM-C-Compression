@@ -54,16 +54,14 @@ void expandFile(std::unique_ptr<stl::BitFile>& input, std::fstream& output, uint
 	initializeModel(order);
 	initializeArithmeticDecoder(input, code);
 	for (;;) {
-		getSymbolScale(s);
-		printf("scale = %d\n", s.scale);
-		index = getCurrentIndex(s, low, high, code);
-		std::cout << index << "\n";
-		c = convertSymbolToInt(index, s);
-		if (c == END_OF_STREAM) {
-			std::cout << "Called\n";
+		do {
+			getSymbolScale(s);
+			index = getCurrentIndex(s, low, high, code);
+			c = convertSymbolToInt(index, s);
+			removeSymbolFromStream(input, s, low, high, code);
+		} while (c == ESCAPE);
+		if (c == END_OF_STREAM)
 			break;
-		}
-		removeSymbolFromStream(input, s, low, high, code);
 		output.put(c);
 		updateModel(c);
 	}

@@ -54,44 +54,26 @@ void flushArithmeticEncoder(std::unique_ptr<stl::BitFile>& output, USHORT high, 
 	}
 }
 
-size_t readBytes(std::fstream& input, std::string& buffer, size_t limit) {
-	buffer.clear();
-	buffer.reserve(limit);
-	size_t counter = 0;
-	int ch{};
-	while (counter < limit) {
-		ch = input.get();
-		if (ch == EOF)
-			break;
-		buffer.push_back((char)ch);
-		++counter;
-	}
-	buffer.shrink_to_fit();
-	return counter;
-}
-
 void compressFile(std::fstream& input, std::unique_ptr<stl::BitFile>& output, uint32_t order) {
 	int c{};
 	USHORT low{ 0 }, high{ 0xffff }, underflowBits{ 0 };
 	Symbol s;
 	initializeModel(order);
-	size_t bufferSize = 4096;
-	std::string buffer;
-	size_t numBytesRead = 0;
-	do {
-		numBytesRead = readBytes(input, buffer, bufferSize);
-		bool escaped{};
-		for (char c : buffer) {
+	bool escaped{};
+	for (;;) {
+		c = input.get();
+		if (c == EOF) 
+			c = END_OF_STREAM;
+		escaped = convertIntToSymbol(c, s);
+		encodeSymbol(output, s, low, high, underflowBits);
+		while (escaped) {
 			escaped = convertIntToSymbol(c, s);
 			encodeSymbol(output, s, low, high, underflowBits);
-			while (escaped) {
-				escaped = convertIntToSymbol(c, s);
-				encodeSymbol(output, s, low, high, underflowBits);
-			}
-			updateModel(c);
 		}
-	} while (numBytesRead == bufferSize);
-	convertIntToSymbol(END_OF_STREAM, s);
+		if (c == END_OF_STREAM) 
+			break;
+		updateModel(c);
+	}
 	flushArithmeticEncoder(output, high, underflowBits);
 	stl::outputBits(output, 0L, 16);
 }
