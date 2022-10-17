@@ -15,8 +15,6 @@ void encodeSymbol(std::unique_ptr<stl::BitFile>& output, Symbol& s, USHORT& low,
 	unsigned long range = (high - low) + 1;
 	high = low + static_cast<USHORT>((range * s.highCount) / s.scale - 1);
 	low = low + static_cast<USHORT>((range * s.lowCount) / s.scale);
-	/*std::cout << std::format("highcount: {},  lowcount: {}  \n", s.highCount, s.lowCount);
-	std::cout << std::format("low: {},  high: {}\n", low, high);*/
 	//the following loop churns out new bits until high and low are far enough apart to have stabilized
 	for (;;) {
 		//if their MSBs are the same

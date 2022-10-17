@@ -26,12 +26,11 @@ void initializeModel(uint32_t order) {
 	}
 }
 
-void rescaleContextCount(std::shared_ptr<Trie::Node>& cursor) {
+void rescaleContextCount(std::shared_ptr<Trie::Node> cursor) {
 	for (auto i{ 0u }; i < SYMBOL_COUNT; ++i) {
 		if (cursor->children[i]) {
-			cursor->children[i]->contextCount /= 2;
-			if (cursor->children[i]->contextCount == 0)
-				cursor->children[i] = nullptr;
+			cursor->children[i]->contextCount = (cursor->children[i]->contextCount + 1 ) /2;
+			if (cursor->children[i]->contextCount == 0) {}
 		}
 	}
 }
@@ -121,15 +120,17 @@ int convertSymbolToInt(long index, Symbol& s) {
 	}
 }
 
-
 void updateModel(int c) {
 	//search for parent (parent must be at a lower depth that maximum depth
 	std::shared_ptr<Trie::Node> recentlyUpdatedNodePtr{ basePtr }, vineUpdater{ nullptr };
 	if (recentlyUpdatedNodePtr->depthInTrie == trie.maxDepth) {
 		recentlyUpdatedNodePtr = recentlyUpdatedNodePtr->vine;
 	}
-	if (recentlyUpdatedNodePtr->children[c])//if not nullptr...Hence, symbol is present
+	if (recentlyUpdatedNodePtr->children[c]){//if not nullptr...Hence, symbol is present
 		recentlyUpdatedNodePtr->children[c]->contextCount++;
+		if (recentlyUpdatedNodePtr->children[c]->contextCount == 255)
+			rescaleContextCount(recentlyUpdatedNodePtr);
+	}
 	else {
 		recentlyUpdatedNodePtr->children[c] = std::make_shared<Trie::Node>();
 		recentlyUpdatedNodePtr->children[c]->symbol = c;
@@ -137,16 +138,17 @@ void updateModel(int c) {
 		recentlyUpdatedNodePtr->children[c]->contextCount++;
 		recentlyUpdatedNodePtr->activeChildren++;
 	}
-	if (recentlyUpdatedNodePtr->children[c]->contextCount == 255)
-		rescaleContextCount(recentlyUpdatedNodePtr);
-
+	
 	basePtr = recentlyUpdatedNodePtr->children[c];
 	vineUpdater = basePtr;
 
 	while (recentlyUpdatedNodePtr->depthInTrie > 0) {
 		recentlyUpdatedNodePtr = recentlyUpdatedNodePtr->vine;
-		if (recentlyUpdatedNodePtr->children[c])
+		if (recentlyUpdatedNodePtr->children[c]) {
 			recentlyUpdatedNodePtr->children[c]->contextCount++;
+			if (recentlyUpdatedNodePtr->children[c]->contextCount == 255)
+				rescaleContextCount(recentlyUpdatedNodePtr);
+		}
 		else {
 			recentlyUpdatedNodePtr->children[c] = std::make_shared<Trie::Node>();
 			recentlyUpdatedNodePtr->children[c]->symbol = c;
@@ -154,8 +156,7 @@ void updateModel(int c) {
 			recentlyUpdatedNodePtr->children[c]->contextCount++;
 			recentlyUpdatedNodePtr->activeChildren++;
 		}
-		if (recentlyUpdatedNodePtr->children[c]->contextCount == 255)
-			rescaleContextCount(recentlyUpdatedNodePtr);
+		
 
 		vineUpdater->vine = recentlyUpdatedNodePtr->children[c];
 		vineUpdater = recentlyUpdatedNodePtr->children[c];
