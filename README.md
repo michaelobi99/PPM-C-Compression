@@ -10,5 +10,8 @@ I tested the algorithm on several files with very good compression ratios, usual
 Memory Usage:
 The memory requirement for the PPM is very large, and increases with increasing context length.
 
+Compression speed:
+The compression speed of this implemenation averages at about 1.3 mb/second.
+
 
 
