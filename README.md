@@ -11,7 +11,7 @@ Memory Usage:
 The memory requirement for the PPM is very large, and increases with increasing context length.
 
 Compression speed:
-The compression speed of this implemenation averages at about 1.3 mb/second.
+The compression speed of this implementation averages at about 1.3 mb/second.
 
 
 
