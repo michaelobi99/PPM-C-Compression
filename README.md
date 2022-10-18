@@ -4,7 +4,7 @@ This implementation (PPMC) uses a trie data structure to model the different con
 generated are sent to an arithmetic encoder to encode them into bits.
 
 Compression Efficiency:
-I tested the algorithm on several files with very good compression ratios, usually (3-4) : 1, and in one case i got a compression ratio of about
+I tested the algorithm on several files with very good compression ratios, usually (4-5) : 1, and in one case i got a compression ratio of about
 100 (the file content was very skewed).
 The compression efficiency was slightly improved after implenting exclusion.
 
