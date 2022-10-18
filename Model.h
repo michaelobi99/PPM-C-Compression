@@ -33,32 +33,31 @@ void rescaleContextCount(std::shared_ptr<Trie::Node> cursor) {
 	}
 }
 
-void initializeTotalsToCurrentTable(bool exclude = false) {
+void initializeTotalsToCurrentTable() {
 	int i;
 	totals[0] = 0;
 	if (cursor) {
 		for (i = 0; i < SYMBOL_COUNT; ++i) {
 			totals[i + 1] = totals[i] +
-				(((cursor->children[i] == nullptr) || (excludedCharacters[i] && exclude)) ? 0 :
+				(((cursor->children[i] == nullptr) || (excludedCharacters[i])) ? 0 :
 				cursor->children[i]->contextCount);
 		}
 		totals[ESCAPE + 1] = totals[ESCAPE] + cursor->activeChildren;
 	}
 	else {
-		auto counter = 0;
 		for (i = 0; i < SYMBOL_COUNT; ++i) {
 			totals[i + 1] = totals[i] +
-				((excludedCharacters[i] == 0) ? negativeOneContextTable[i] : 0);
+				((excludedCharacters[i]) ? 0 : negativeOneContextTable[i]);
 		}
 		totals[ESCAPE + 1] = totals[ESCAPE] + 0;
 	}
 }
 
-void getProbability(bool exclude = false) {
-	initializeTotalsToCurrentTable(exclude);
+void getProbability() {
+	initializeTotalsToCurrentTable();
 	if (totals[ESCAPE + 1] >= MAX_SIZE) {
 		rescaleContextCount(cursor);
-		initializeTotalsToCurrentTable(exclude);
+		initializeTotalsToCurrentTable();
 	}
 }
 
@@ -71,36 +70,34 @@ void fillCharactersToBeExcluded() {
 }
 
 bool convertIntToSymbol(int c, Symbol& s) {
+	bool escaped{};
 	if (escapeContext >= 0) {
 		for (; cursor; --escapeContext, cursor = cursor->vine) {
 			if (cursor->activeChildren > 0) break;
 		}
 	}
-	if (!cursor) {
-		getProbability(true);
-		std::memset(excludedCharacters.data(), 0, std::size(excludedCharacters));
-		s.highCount = totals[c + 1];
-		s.lowCount = totals[c];
-		s.scale = totals[ESCAPE];
-		return false;
-	}
-	
-	bool escaped{};
-
-	if (cursor->children[c]) { //current symbol exists in context
-		getProbability(true);
+	if (!cursor) {//context doesn't exist
+		getProbability();
 		std::memset(excludedCharacters.data(), 0, std::size(excludedCharacters));
 		s.highCount = totals[c + 1];
 		s.lowCount = totals[c];
 		escaped = false;
 	}
-	else { //current symbol doesnt exist in context. To avoid zero probability, we use escape
-		fillCharactersToBeExcluded();
+	else if (cursor->children[c]) { //current symbol exists in context
 		getProbability();
+		std::memset(excludedCharacters.data(), 0, std::size(excludedCharacters));
+		s.highCount = totals[c + 1];
+		s.lowCount = totals[c];
+		escaped = false;
+	}
+	else { //current symbol doesnt exist in context, but context exists. avoid zero probability with escape
+		getProbability();
+		fillCharactersToBeExcluded();
 		s.highCount = totals[ESCAPE + 1];
 		s.lowCount = totals[ESCAPE];
-		escaped = true;
 		cursor = cursor->vine;
+		--escapeContext;
+		escaped = true;
 	}
 	s.scale = totals[ESCAPE + 1];
 	return escaped;
