@@ -10,8 +10,8 @@ struct Symbol {
 
 
 uint16_t totals[SYMBOL_COUNT + 2]; //used to get the cumulative totals of any context
-uint16_t negativeOneContextTable[SYMBOL_COUNT + 1];
-char excludedCharacters[256];
+std::vector<uint8_t> negativeOneContextTable(SYMBOL_COUNT);
+std::vector<std::uint8_t> excludedCharacters(SYMBOL_COUNT);
 int escapeContext = 0;
 
 
@@ -20,10 +20,8 @@ void initializeModel(uint32_t order) {
 	basePtr = trie.root;//points to the most recent node of the Trie
 	cursor = basePtr;
 	trie.maxDepth = order + 1;
-	negativeOneContextTable[0] = 0;
-	for (int i = 0; i < SYMBOL_COUNT; ++i) {
-		negativeOneContextTable[i + 1] = negativeOneContextTable[i] + 1;
-	}
+	std::memset(excludedCharacters.data(), 0, std::size(excludedCharacters));
+	std::memset(negativeOneContextTable.data(), 1, std::size(negativeOneContextTable));
 }
 
 void rescaleContextCount(std::shared_ptr<Trie::Node> cursor) {
@@ -35,26 +33,40 @@ void rescaleContextCount(std::shared_ptr<Trie::Node> cursor) {
 	}
 }
 
-void initializeTotalsToCurrentTable() {
+void initializeTotalsToCurrentTable(bool exclude = false) {
 	int i;
 	totals[0] = 0;
-	for (i = 0; i < SYMBOL_COUNT; ++i) {
-		if (cursor->children[i]) {
-			totals[i + 1] = totals[i] + cursor->children[i]->contextCount;
+	if (cursor) {
+		for (i = 0; i < SYMBOL_COUNT; ++i) {
+			totals[i + 1] = totals[i] +
+				(((cursor->children[i] == nullptr) || (excludedCharacters[i] && exclude)) ? 0 :
+				cursor->children[i]->contextCount);
 		}
-		else {
-			totals[i + 1] = totals[i] + 0;
-		}
+		totals[ESCAPE + 1] = totals[ESCAPE] + cursor->activeChildren;
 	}
-	totals[ESCAPE + 1] = cursor->activeChildren + totals[ESCAPE];
-	
+	else {
+		auto counter = 0;
+		for (i = 0; i < SYMBOL_COUNT; ++i) {
+			totals[i + 1] = totals[i] +
+				((excludedCharacters[i] == 0) ? negativeOneContextTable[i] : 0);
+		}
+		totals[ESCAPE + 1] = totals[ESCAPE] + 0;
+	}
 }
 
-void getProbability() {
-	initializeTotalsToCurrentTable();
+void getProbability(bool exclude = false) {
+	initializeTotalsToCurrentTable(exclude);
 	if (totals[ESCAPE + 1] >= MAX_SIZE) {
 		rescaleContextCount(cursor);
-		initializeTotalsToCurrentTable();
+		initializeTotalsToCurrentTable(exclude);
+	}
+}
+
+void fillCharactersToBeExcluded() {
+	for (int i = 0; i < SYMBOL_COUNT; ++i) {
+		if (cursor->children[i]) {
+			excludedCharacters[i] = 1;
+		}
 	}
 }
 
@@ -65,19 +77,26 @@ bool convertIntToSymbol(int c, Symbol& s) {
 		}
 	}
 	if (!cursor) {
-		s.highCount = negativeOneContextTable[c + 1];
-		s.lowCount = negativeOneContextTable[c];
-		s.scale = negativeOneContextTable[END_OF_STREAM + 1];
+		getProbability(true);
+		std::memset(excludedCharacters.data(), 0, std::size(excludedCharacters));
+		s.highCount = totals[c + 1];
+		s.lowCount = totals[c];
+		s.scale = totals[ESCAPE];
 		return false;
 	}
+	
 	bool escaped{};
-	getProbability();
+
 	if (cursor->children[c]) { //current symbol exists in context
+		getProbability(true);
+		std::memset(excludedCharacters.data(), 0, std::size(excludedCharacters));
 		s.highCount = totals[c + 1];
 		s.lowCount = totals[c];
 		escaped = false;
 	}
 	else { //current symbol doesnt exist in context. To avoid zero probability, we use escape
+		fillCharactersToBeExcluded();
+		getProbability();
 		s.highCount = totals[ESCAPE + 1];
 		s.lowCount = totals[ESCAPE];
 		escaped = true;
@@ -92,33 +111,25 @@ void getSymbolScale(Symbol& s) {
 		if (cursor->activeChildren > 0) break;
 		cursor = cursor->vine;
 	}
-	if (!cursor) {
-		s.scale = negativeOneContextTable[END_OF_STREAM + 1]; 
-	}
-	else {
-		getProbability();
-		s.scale = totals[ESCAPE + 1];
-	}
+	getProbability();
+	s.scale = totals[ESCAPE + 1];
 }
 
 int convertSymbolToInt(long index, Symbol& s) {
 	int c;
-	if (!cursor) {
-		for (c = END_OF_STREAM; index < negativeOneContextTable[c]; --c) {}
-		s.highCount = negativeOneContextTable[c + 1];
-		s.lowCount = negativeOneContextTable[c];
-		return c;
+	for (c = ESCAPE; index < totals[c]; --c) {}
+	s.highCount = totals[c + 1];
+	s.lowCount = totals[c];
+	if (c == ESCAPE) {
+		fillCharactersToBeExcluded();
+		cursor = cursor->vine;
 	}
 	else {
-		for (c = ESCAPE; index < totals[c]; --c) {}
-		s.highCount = totals[c + 1];
-		s.lowCount = totals[c];
-		if (c == ESCAPE) {
-			cursor = cursor->vine;
-		}
-		return c;
+		std::memset(excludedCharacters.data(), 0, std::size(excludedCharacters));
 	}
+	return c;
 }
+
 
 void updateModel(int c) {
 	//search for parent (parent must be at a lower depth that maximum depth
@@ -156,7 +167,7 @@ void updateModel(int c) {
 			recentlyUpdatedNodePtr->children[c]->contextCount++;
 			recentlyUpdatedNodePtr->activeChildren++;
 		}
-		
+
 
 		vineUpdater->vine = recentlyUpdatedNodePtr->children[c];
 		vineUpdater = recentlyUpdatedNodePtr->children[c];
