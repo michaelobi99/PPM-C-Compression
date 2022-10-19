@@ -24,6 +24,7 @@ results of Cleary and Witten implementation for comparisons.
 |book2   |  610856   |     2.26			 |		2.06		    |
 |geo     |  102400   |     4.78			 |		4.92		    |
 |news    |  377109   |     2.65			 |		2.48		    |
+|obj1    |  21504    |     3.76          |      3.91            |
 |obj2    |  246814   |     2.69			 |		2.61		    |
 |paper1	 |  53161	 |	   2.48			 |		2.40		    |
 |paper2	 |  82199	 |	   2.45			 |		2.36		    |
