@@ -14,12 +14,12 @@ using USHORT = std::uint16_t;
 struct Trie {
 	struct Node {
 		std::vector<std::shared_ptr<Node>> children;
-		std::shared_ptr<Node> vine;
+		Node* vine;
 		USHORT depthInTrie;
 		USHORT contextCount; //keeps track of the frequency of this symbol in a particular context
 		USHORT activeChildren; //min 0 , max 256
 		char symbol;
-		Node() : vine{ nullptr }, depthInTrie{ 0 }, contextCount{ 0 }, activeChildren{ 0 }, symbol{ char() } {
+		Node() : vine{}, depthInTrie{ 0 }, contextCount{ 0 }, activeChildren{ 0 }, symbol{ char() } {
 			children.resize(SYMBOL_COUNT);
 		}
 	};
@@ -28,5 +28,5 @@ struct Trie {
 	uint32_t maxDepth{ 0 };
 };
 Trie trie;
-std::shared_ptr<Trie::Node> basePtr;//points to the most recent node of the Trie
-std::shared_ptr<Trie::Node> cursor;
+Trie::Node* basePtr;//points to the most recent node of the Trie
+Trie::Node* cursor;
