@@ -33,7 +33,7 @@ results of Cleary and Witten implementation for comparisons.
 |progl	 |  71646	 |	   1.90			 |		1.84		    |
 |progp	 |  49379	 |	   1.84			 |		1.83		    |
 |trans	 |  93695	 |     1.77			 |		1.65		    |
-|average |  224402	 |	   2.48			 |		2.32		    |
+|average |  224402	 |	   2.48			 |		2.43		    |
 
 
 
