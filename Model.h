@@ -17,14 +17,14 @@ int escapeContext = 0;
 
 void initializeModel(uint32_t order) {
 	trie.root = std::make_shared<Trie::Node>();
-	basePtr = trie.root;//points to the most recent node of the Trie
+	basePtr = trie.root.get();//points to the most recent node of the Trie
 	cursor = basePtr;
 	trie.maxDepth = order + 1;
 	std::memset(excludedCharacters.data(), 0, std::size(excludedCharacters));
 	std::memset(negativeOneContextTable.data(), 1, std::size(negativeOneContextTable));
 }
 
-void rescaleContextCount(std::shared_ptr<Trie::Node> cursor) {
+void rescaleContextCount(Trie::Node* cursor) {
 	for (auto i{ 0u }; i < SYMBOL_COUNT; ++i) {
 		if (cursor->children[i]) {
 			cursor->children[i]->contextCount = (cursor->children[i]->contextCount + 1 ) /2;
@@ -130,7 +130,8 @@ int convertSymbolToInt(long index, Symbol& s) {
 
 void updateModel(int c) {
 	//search for parent (parent must be at a lower depth that maximum depth
-	std::shared_ptr<Trie::Node> recentlyUpdatedNodePtr{ basePtr }, vineUpdater{ nullptr };
+	Trie::Node* recentlyUpdatedNodePtr{ basePtr };
+	Trie::Node* vineUpdater{ nullptr };
 	if (recentlyUpdatedNodePtr->depthInTrie == trie.maxDepth) {
 		recentlyUpdatedNodePtr = recentlyUpdatedNodePtr->vine;
 	}
@@ -147,7 +148,7 @@ void updateModel(int c) {
 		recentlyUpdatedNodePtr->activeChildren++;
 	}
 	
-	basePtr = recentlyUpdatedNodePtr->children[c];
+	basePtr = recentlyUpdatedNodePtr->children[c].get();
 	vineUpdater = basePtr;
 
 	while (recentlyUpdatedNodePtr->depthInTrie > 0) {
@@ -166,8 +167,8 @@ void updateModel(int c) {
 		}
 
 
-		vineUpdater->vine = recentlyUpdatedNodePtr->children[c];
-		vineUpdater = recentlyUpdatedNodePtr->children[c];
+		vineUpdater->vine = recentlyUpdatedNodePtr->children[c].get();
+		vineUpdater = recentlyUpdatedNodePtr->children[c].get();
 	}
 	//at this point recentlyUpdatedNodePtr will be pointing to the root. All order-1 context symbols
 	//have their vine pointig to the root
