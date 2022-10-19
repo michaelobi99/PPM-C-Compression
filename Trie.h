@@ -14,22 +14,13 @@ using USHORT = std::uint16_t;
 struct Trie {
 	struct Node {
 		std::vector<std::shared_ptr<Node>> children;
-		std::weak_ptr<Node> vine;
+		std::shared_ptr<Node> vine;
 		USHORT depthInTrie;
 		USHORT contextCount; //keeps track of the frequency of this symbol in a particular context
 		USHORT activeChildren; //min 0 , max 256
 		char symbol;
-		Node() : vine{}, depthInTrie{ 0 }, contextCount{ 0 }, activeChildren{ 0 }, symbol{ char() } {
+		Node() : vine{ nullptr }, depthInTrie{ 0 }, contextCount{ 0 }, activeChildren{ 0 }, symbol{ char() } {
 			children.resize(SYMBOL_COUNT);
-		}
-		~Node() {
-			std::cout << "Called\n";
-			for (auto& elem : children) {
-				if (elem) {
-					delete elem.get();
-				}
-			}
-			children.clear();
 		}
 	};
 	Trie() = default;

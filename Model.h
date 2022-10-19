@@ -15,8 +15,6 @@ int escapeContext = 0;
 
 
 void initializeModel(uint32_t order) {
-
-	basePtr = cursor = trie.root = nullptr;
 	trie.root = std::make_shared<Trie::Node>();
 	basePtr = trie.root;//points to the most recent node of the Trie
 	cursor = basePtr;
