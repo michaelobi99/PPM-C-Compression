@@ -17,7 +17,6 @@ The compression speed of this implementation averages at about 1.3 mb/second, wi
 The table below shows the compression efficiency of this implementation when compressing the calgary corpus. I also include the 
 results of Cleary and Witten implementation for comparisons.
 
-|--------|-----------|-------------------|----------------------|
 |file    |   size    |   PPMC(Witten)    |  PPMC(mine)(order-4) |
 |--------|-----------|-------------------|----------------------|
 |bib     |  111261   |     2.11			 |		1.99		    |
@@ -33,7 +32,6 @@ results of Cleary and Witten implementation for comparisons.
 |progl	 |  71646	 |	   1.90			 |		1.84		    |
 |progp	 |  49379	 |	   1.84			 |		1.83		    |
 |trans	 |  93695	 |     1.77			 |		1.65		    |
-|--------|-----------|-------------------|----------------------|
 |average |  224402	 |	   2.48			 |		2.32		    |
 |--------|-----------|-------------------|----------------------|
 
