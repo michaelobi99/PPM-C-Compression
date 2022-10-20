@@ -28,7 +28,9 @@ void rescaleContextCount(Trie::Node* cursor) {
 	for (auto i{ 0u }; i < SYMBOL_COUNT; ++i) {
 		if (cursor->children[i]) {
 			cursor->children[i]->contextCount = (cursor->children[i]->contextCount + 1 ) /2;
-			if (cursor->children[i]->contextCount == 0) {}
+			if (cursor->children[i]->contextCount == 0) {
+				cursor->children[i] = nullptr;
+			}
 		}
 	}
 }
@@ -165,7 +167,6 @@ void updateModel(int c) {
 			recentlyUpdatedNodePtr->children[c]->contextCount++;
 			recentlyUpdatedNodePtr->activeChildren++;
 		}
-
 
 		vineUpdater->vine = recentlyUpdatedNodePtr->children[c].get();
 		vineUpdater = recentlyUpdatedNodePtr->children[c].get();
