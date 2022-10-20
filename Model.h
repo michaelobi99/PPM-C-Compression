@@ -16,7 +16,7 @@ int escapeContext = 0;
 
 
 void initializeModel(uint32_t order) {
-	trie.root = std::make_shared<Trie::Node>();
+	trie.root = std::make_unique<Trie::Node>();
 	basePtr = trie.root.get();//points to the most recent node of the Trie
 	cursor = basePtr;
 	trie.maxDepth = order + 1;
@@ -143,7 +143,7 @@ void updateModel(int c) {
 			rescaleContextCount(recentlyUpdatedNodePtr);
 	}
 	else {
-		recentlyUpdatedNodePtr->children[c] = std::make_shared<Trie::Node>();
+		recentlyUpdatedNodePtr->children[c] = std::make_unique<Trie::Node>();
 		recentlyUpdatedNodePtr->children[c]->symbol = c;
 		recentlyUpdatedNodePtr->children[c]->depthInTrie = recentlyUpdatedNodePtr->depthInTrie + 1;
 		recentlyUpdatedNodePtr->children[c]->contextCount++;
@@ -161,7 +161,7 @@ void updateModel(int c) {
 				rescaleContextCount(recentlyUpdatedNodePtr);
 		}
 		else {
-			recentlyUpdatedNodePtr->children[c] = std::make_shared<Trie::Node>();
+			recentlyUpdatedNodePtr->children[c] = std::make_unique<Trie::Node>();
 			recentlyUpdatedNodePtr->children[c]->symbol = c;
 			recentlyUpdatedNodePtr->children[c]->depthInTrie = recentlyUpdatedNodePtr->depthInTrie + 1;
 			recentlyUpdatedNodePtr->children[c]->contextCount++;
