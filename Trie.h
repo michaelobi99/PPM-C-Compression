@@ -13,7 +13,7 @@ using USHORT = std::uint16_t;
 
 struct Trie {
 	struct Node {
-		std::vector<std::shared_ptr<Node>> children;
+		std::vector<std::unique_ptr<Node>> children;
 		Node* vine;
 		USHORT depthInTrie;
 		USHORT contextCount; //keeps track of the frequency of this symbol in a particular context
@@ -24,7 +24,7 @@ struct Trie {
 		}
 	};
 	Trie() = default;
-	std::shared_ptr<Node> root;
+	std::unique_ptr<Node> root;
 	uint32_t maxDepth{ 0 };
 };
 Trie trie;
